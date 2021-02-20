@@ -1,0 +1,25 @@
+version: '3.8'
+services:
+  app:
+    env_file:
+      - app/.env
+    build:
+      context: ./
+    entrypoint: ["/usr/local/sbin/wait-for-db.sh", "db"]
+    command: ["go run /var/www/app/main.go"]
+    volumes:
+    - ./app:/var/www/app
+    working_dir: /var/www/app
+    ports:
+      - 8001:8001
+    depends_on:
+      - db
+  db:
+    restart: always
+    image: postgres:latest
+    volumes:
+      - ./docker/db/data:/var/lib/postgresql/data
+    env_file:
+      - app/.env
+    ports:
+      - 5445:5432
