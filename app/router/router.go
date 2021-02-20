@@ -19,7 +19,7 @@ func NewRouter(serviceManager *services.ServiceManager) *Config {
 	}
 }
 
-func (r Config) InitRoutes() {
+func (r *Config) InitRoutes() {
 	ch := handlers.NewCategoriesHandler(r.serviceManager)
 	ph := handlers.NewProductsHandler(r.serviceManager)
 
@@ -35,7 +35,7 @@ func (r Config) InitRoutes() {
 	r.HTTPRouter.DELETE("/products/{id}", ph.Delete)
 }
 
-func (r Config) GetHandler() func(ctx *fasthttp.RequestCtx) {
+func (r *Config) GetHandler() func(ctx *fasthttp.RequestCtx) {
 	r.InitRoutes()
 	return r.HTTPRouter.Handler
 }

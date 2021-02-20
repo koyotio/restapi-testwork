@@ -12,6 +12,7 @@ import (
 	"rest-api/router"
 	"rest-api/services"
 	"rest-api/sources"
+	"time"
 )
 
 func main() {
@@ -20,8 +21,6 @@ func main() {
 	if err := initConfig(); err != nil {
 		logrus.Fatalf("error initializing configs: %s", err.Error())
 	}
-
-	listenAddr := fmt.Sprintf("%s:%d", viper.GetString("host"), viper.GetInt("port"))
 
 	db, err := sources.NewPostgresSource(
 		viper.GetString("db.host"),
@@ -38,7 +37,30 @@ func main() {
 	serviceManager := services.NewServiceManager(repositoryManager)
 	appRouter := router.NewRouter(serviceManager)
 
-	if err := fasthttp.ListenAndServe(listenAddr, appRouter.GetHandler()); err != nil {
+	listenAddr := fmt.Sprintf("%s:%d", viper.GetString("host"), viper.GetInt("port"))
+	server := fasthttp.Server{
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		Handler:      appRouter.GetHandler(),
+	}
+
+	go func() {
+		for true {
+			err = db.Ping()
+			if err != nil {
+				logrus.Infoln(fmt.Sprintf("db connection lost: %s", err.Error()))
+				logrus.Infoln("shutting down httpserver...")
+				err := server.Shutdown()
+				if err != nil {
+					logrus.Fatalf("failed to shutdown server: %s", err.Error())
+				}
+				break
+			}
+			time.Sleep(1 * time.Second)
+		}
+	}()
+
+	if err := server.ListenAndServe(listenAddr); err != nil {
 		log.Fatalf("error in ListenAndServe: %s", err)
 	}
 

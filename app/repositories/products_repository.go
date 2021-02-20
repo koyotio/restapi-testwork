@@ -17,10 +17,10 @@ func NewDBProducts(db *sqlx.DB) *DBProducts {
 }
 
 type Product struct {
-	Id         int    `db:"id"`
-	CategoryId int    `db:"category_id"`
-	Articul    string `db:"articul"`
-	Name       string `db:"name"`
+	Id         int    `db:"id" json:"id"`
+	CategoryId int    `db:"category_id" json:"category_id"`
+	Articul    string `db:"articul" json:"articul"`
+	Name       string `db:"name" json:"name"`
 }
 
 type ProductsRepository interface {
@@ -33,38 +33,40 @@ type ProductsRepository interface {
 
 func (p DBProducts) Create(productInput input.ProductInput) (*Product, error) {
 	product := Product{}
-
 	values := make([]string, 0)
+	columns := make([]string, 0)
 	args := make([]interface{}, 0)
 	numberOfArguments := 0
 
 	if productInput.CategoryId != nil {
 		numberOfArguments++
-		values = append(values, fmt.Sprintf(`"category_id"=$%d`, numberOfArguments))
+		values = append(values, fmt.Sprintf(`$%d`, numberOfArguments))
+		columns = append(columns, `"category_id"`)
 		args = append(args, *productInput.CategoryId)
-		product.CategoryId = *productInput.CategoryId
 	}
 
 	if productInput.Name != nil {
 		numberOfArguments++
-		values = append(values, fmt.Sprintf(`"name"=$%d`, numberOfArguments))
+		values = append(values, fmt.Sprintf(`$%d`, numberOfArguments))
+		columns = append(columns, `"name"`)
 		args = append(args, *productInput.Name)
-		product.Name = *productInput.Name
 	}
 
 	if productInput.Articul != nil {
 		numberOfArguments++
-		values = append(values, fmt.Sprintf(`"articul"=$%d`, numberOfArguments))
+		values = append(values, fmt.Sprintf(`$%d`, numberOfArguments))
+		columns = append(columns, `"articul"`)
 		args = append(args, *productInput.Articul)
-		product.Articul = *productInput.Articul
 	}
 
-	insertSet := strings.Join(values, `, `)
-
 	err := p.db.QueryRow(
-		fmt.Sprintf(`INSERT INTO "products" SET %s RETURNING "id"`, insertSet),
+		fmt.Sprintf(
+			`INSERT INTO "products"  (%s) VALUES(%s) RETURNING "id", "name", "articul", "category_id"`,
+			strings.Join(columns, `, `),
+			strings.Join(values, `, `),
+		),
 		args...,
-	).Scan(&product.Id)
+	).Scan(&product.Id, &product.Name, &product.Articul, &product.CategoryId)
 	if err != nil {
 		return nil, err
 	}
@@ -72,9 +74,7 @@ func (p DBProducts) Create(productInput input.ProductInput) (*Product, error) {
 }
 
 func (p DBProducts) Update(id int, productInput input.ProductInput) (*Product, error) {
-	product := Product{
-		Id: id,
-	}
+	product := Product{}
 	values := make([]string, 0)
 	args := make([]interface{}, 0)
 	numberOfArguments := 0
@@ -83,32 +83,37 @@ func (p DBProducts) Update(id int, productInput input.ProductInput) (*Product, e
 		numberOfArguments++
 		values = append(values, fmt.Sprintf(`"category_id"=$%d`, numberOfArguments))
 		args = append(args, *productInput.CategoryId)
-		product.CategoryId = *productInput.CategoryId
 	}
 
 	if productInput.Name != nil {
 		numberOfArguments++
 		values = append(values, fmt.Sprintf(`"name"=$%d`, numberOfArguments))
 		args = append(args, *productInput.Name)
-		product.Name = *productInput.Name
 	}
 
 	if productInput.Articul != nil {
 		numberOfArguments++
 		values = append(values, fmt.Sprintf(`"articul"=$%d`, numberOfArguments))
 		args = append(args, *productInput.Articul)
-		product.Articul = *productInput.Articul
 	}
 
 	updateSet := strings.Join(values, `, `)
 	args = append(args, id)
 	numberOfArguments++
 
-	result, err := p.db.Exec(
-		fmt.Sprintf(`UPDATE "products" SET %s WHERE "id"=$%d`, updateSet, numberOfArguments),
+	row := p.db.QueryRow(
+		fmt.Sprintf(
+			`UPDATE "products" SET %s WHERE "id"=$%d RETURNING "id", "name", "articul", "category_id"`,
+			updateSet,
+			numberOfArguments,
+		),
 		args...,
 	)
-	if result == nil {
+	if row.Err() != nil {
+		return nil, row.Err()
+	}
+	err := row.Scan(&product.Id, &product.Name, &product.Articul, &product.CategoryId)
+	if err != nil {
 		return nil, err
 	}
 	return &product, err
@@ -127,20 +132,19 @@ func (p DBProducts) GetAll() ([]Product, error) {
 }
 
 func (p DBProducts) GetById(id int) (*Product, error) {
-	product := Product{Id: id}
-	row := p.db.QueryRow(
-		`SELECT "category_id", "name", "articul" FROM "products" WHERE "id"=$1`,
+	product := Product{}
+	err := p.db.QueryRow(
+		`SELECT "id", "category_id", "name", "articul" FROM "products" WHERE "id"=$1`,
 		id,
 	).Scan(
+		&product.Id,
 		&product.CategoryId,
 		&product.Articul,
 		&product.Name,
 	)
-	if row == nil {
+
+	if err != nil {
 		return nil, errors.New(`product not found`)
-	}
-	if len(row.Error()) != 0 {
-		return nil, errors.New(row.Error())
 	}
 	return &product, nil
 }

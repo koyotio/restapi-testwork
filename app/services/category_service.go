@@ -10,8 +10,8 @@ type CategoryServiceConfig struct {
 }
 
 type CategoryService interface {
-	CreateCategory(categoryInput input.CategoryInput) (*repositories.Category, error)
-	UpdateCategory(id int, categoryInput input.CategoryInput) (*repositories.Category, error)
+	CreateCategory(categoryInput *input.CategoryInput) (*repositories.Category, error)
+	UpdateCategory(id int, categoryInput *input.CategoryInput) (*repositories.Category, error)
 	DeleteCategory(id int) (bool, error)
 	GetAllCategories() ([]repositories.Category, error)
 	GetCategoryById(id int) (*repositories.Category, error)
@@ -23,11 +23,11 @@ func NewCategoryService(repositoryManager *repositories.RepositoryManager) *Cate
 	}
 }
 
-func (categoryService *CategoryServiceConfig) CreateCategory(categoryInput input.CategoryInput) (*repositories.Category, error) {
+func (categoryService *CategoryServiceConfig) CreateCategory(categoryInput *input.CategoryInput) (*repositories.Category, error) {
 	return categoryService.RepositoryManager.CategoriesRepository.Create(categoryInput)
 }
 
-func (categoryService *CategoryServiceConfig) UpdateCategory(id int, categoryInput input.CategoryInput) (*repositories.Category, error) {
+func (categoryService *CategoryServiceConfig) UpdateCategory(id int, categoryInput *input.CategoryInput) (*repositories.Category, error) {
 	return categoryService.RepositoryManager.CategoriesRepository.Update(id, categoryInput)
 }
 

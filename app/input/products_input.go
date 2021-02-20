@@ -8,9 +8,15 @@ type ProductInput struct {
 	Name       *string `json:"name"`
 }
 
-func (pi ProductInput) Validate() error {
-	if pi.CategoryId == nil && pi.Articul == nil && pi.Name == nil {
-		return errors.New("input can't be empty")
+func (pi *ProductInput) Validate() error {
+	if pi.CategoryId == nil {
+		return errors.New("product category_id can't be empty")
+	}
+	if pi.Articul == nil {
+		return errors.New("product articul can't be empty")
+	}
+	if pi.Name == nil {
+		return errors.New("product name can't be empty")
 	}
 	return nil
 }

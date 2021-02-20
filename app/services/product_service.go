@@ -10,8 +10,8 @@ type ProductServiceConfig struct {
 }
 
 type ProductService interface {
-	CreateProduct(productInput input.ProductInput) (*repositories.Product, error)
-	UpdateProduct(id int, productInput input.ProductInput) (*repositories.Product, error)
+	CreateProduct(productInput *input.ProductInput) (*repositories.Product, error)
+	UpdateProduct(id int, productInput *input.ProductInput) (*repositories.Product, error)
 	DeleteProduct(id int) (bool, error)
 	GetAllProducts() ([]repositories.Product, error)
 	GetProductById(id int) (*repositories.Product, error)
@@ -21,12 +21,12 @@ func NewProductService(repositoryManager *repositories.RepositoryManager) *Produ
 	return &ProductServiceConfig{RepositoryManager: repositoryManager}
 }
 
-func (productService *ProductServiceConfig) CreateProduct(productInput input.ProductInput) (*repositories.Product, error) {
-	return productService.RepositoryManager.ProductsRepository.Create(productInput)
+func (productService *ProductServiceConfig) CreateProduct(productInput *input.ProductInput) (*repositories.Product, error) {
+	return productService.RepositoryManager.ProductsRepository.Create(*productInput)
 }
 
-func (productService *ProductServiceConfig) UpdateProduct(id int, productInput input.ProductInput) (*repositories.Product, error) {
-	return productService.RepositoryManager.ProductsRepository.Update(id, productInput)
+func (productService *ProductServiceConfig) UpdateProduct(id int, productInput *input.ProductInput) (*repositories.Product, error) {
+	return productService.RepositoryManager.ProductsRepository.Update(id, *productInput)
 }
 
 func (productService *ProductServiceConfig) DeleteProduct(id int) (bool, error) {
